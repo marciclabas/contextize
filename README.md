@@ -6,11 +6,19 @@
 npm i contextize
 ```
 
-```bash
-yarn add contextize
-```
+## Why Contextize?
+
+In React, a common pattern is to have:
+- **Logic-only components**, or "controllers", usually wrapping childs in a context
+- **UI-only components**, consuming the contexts
+
+Contextize simplifies this pattern by separating:
+- **Logic**: custom, written by you
+- **Context/Provider semantics**: always the same, provided by Contextize
 
 ## Simple Contexts
+
+Let's say we're managing a boolean state. In a typical React app, we'd have to:
 
 **A) Vanilla React**
 
@@ -21,7 +29,7 @@ yarn add contextize
 ```jsx
 import { createContext, useContext, useState } from 'react'
 
-const ctx = createContext()
+const ctx = createContext({})
 const useCtx = () => useContext(ctx)
 
 function Provider({ children }) {
@@ -30,9 +38,11 @@ function Provider({ children }) {
 }
 ```
 
+Notice that `useState()` is the only non-boilerplate code. Everything else is the same.
+
 **B) Contextize**
 
-1. Create a "controller" hook. That's it!
+In contextize, we only define a hook that returns the context value. Wrapping it in a provider is handled by contextize:
 
 ```jsx
 import { contextize } from 'contextize'
@@ -42,6 +52,8 @@ function useController() {
 }
 const ctx = contextize(useController)
 ```
+
+The `ctx` object gives access to both the provider and the hook:
 
 **Example Usage**
 
@@ -62,7 +74,7 @@ function App() {
 
 ## Tagged Contexts
 
-Let's say we have to switch according to this state:
+Another common pattern is to have a tagged state. Depending on the tag, we render different components. For example:
 
 ```ts
 export type State = {
@@ -73,27 +85,21 @@ export type State = {
 }
 ```
 
+In a typical React app, we'd have to:
+
 **A) Vanilla React**
 
-1. Create a context
-2. Create a hook
-3. Create a provider
-4. Extra layer with explicit switching logic
-5. Pass down the state via props or create yet another context
+1. Create a context, hook and provider (as before)
+2. Add an extra layer with explicit switching logic
+3. Pass down the state via props or create yet another context
 
 ```jsx
-const ctx = createContext<State>({} as any) // 1
-const useCtx = () => useContext(ctx) // 2
+const ctx = createContext({})
+const useCtx = () => useContext(ctx)
 
-function Provider({ children }) { // 3
+function Provider({ children }) {
   const [state, setState] = useState<State>({ tag: 'loading' })
-
-  useEffect(() => {
-    fetch('/api/data')
-      .then(data => setState{ tag: 'loaded', data })
-      .catch(() => setState({ tag: 'error' }))
-  }, [])
-
+  useEffect(() => { ... }, [])
   return <ctx.Provider value={state} children={children} />
 }
 
@@ -103,9 +109,9 @@ function Loaded({ data }) {
 
 function Switcher() {
   const state = useCtx()
-  if (state.tag === 'loading') return <p>Loading...</p> // 4
+  if (state.tag === 'loading') return <p>Loading...</p>
   if (state.tag === 'error') return <p>Error :/</p>
-  return <Loaded data={state.data} /> // 5
+  return <Loaded data={state.data} />
 }
 
 function App() {
@@ -117,24 +123,33 @@ function App() {
 }
 ```
 
+Notice that:
+1. For the provider: only `useState()` and `useEffect()` are non-boilerplate
+2. For switching, we're forced to add a wrapping component
+
 **B) Contextize**
-1. Create a controller hook
-2. Use contextize's guard components. That's it!
+
+In Contextize, we only need to define a hook returning the (tagged) context value. For switching, we use the provided guard components.
 
 ```jsx
 import { tagged } from 'contextize'
 
 function useController(): State {
   const [state, setState] = useState<State>({ tag: 'loading' })
-  useEffect(() => {
-    fetch('/api/data')
-      .then(data => setState{ tag: 'loaded', data })
-      .catch(() => setState({ tag: 'error' }))
-  }, [])
+  useEffect(() => { ... }, [])
   return state
 }
 
 const ctx = tagged(useController)
+```
+
+Like before, `ctx` contains both the provider and hook. But it also includes:
+- Guard components: `ctx.Loading`, `ctx.Error`, `ctx.Loaded`
+- Guarded hooks: `ctx.useLoading`, `ctx.useError`, `ctx.useLoaded`
+
+**Example Usage**
+
+```jsx
 
 function Loaded() {
   const { data } = ctx.useLoaded()
@@ -150,3 +165,11 @@ function App() {
     </ctx.Provider>
   )
 }
+```
+
+Note that **these are completely typed**.
+
+If we added a `weirdState` tag, we'd get `ctx.WeirdState` and `ctx.useWeirdState` (and typescript would know about it).
+
+
+
