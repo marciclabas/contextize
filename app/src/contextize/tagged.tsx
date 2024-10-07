@@ -60,8 +60,7 @@ export function tagged<
         return Switch
 
       if (propString.startsWith('use')) {
-        const tag = propString.slice(3).toLowerCase()
-        return () => use()[tag]
+        return use
       }
 
       const capitalizedProp = propString.charAt(0).toUpperCase() + propString.slice(1)

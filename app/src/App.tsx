@@ -8,39 +8,43 @@ export type State = {
   setMode(mode: 'light' | 'dark'): void
 }
 
-function useController() {
+function useController(): State {
   const [tag_, setMode] = useState<State['tag']>('light')
   const tag = useDebugged(tag_, 'state')
-  console.log('Tag', tag)
   return useMemo(() => ({ tag, setMode }), [tag])
 }
 
 const modeCtl = tagged(useController)
 
 function Display() {
-  const { tag } = modeCtl.use()
-  return <p>{tag}</p>
+  // const { tag } = modeCtl.use()
+  return <p>tag</p>
 }
 
 function Switch() {
   const { tag, setMode } = modeCtl.use()
-  return <button onClick={() => setMode(tag === 'light' ? 'dark' : 'light')}>Switch [{tag}]</button>
+  return <Button onClick={() => setMode(tag === 'light' ? 'dark' : 'light')}>Switch [{tag}]</Button>
+}
+
+function Dark() {
+  const dark = modeCtl.useDark()
+  console.log('Dark:', dark)
+  return <p>Dark Mode!</p>
 }
 
 export function App() {
   return (
-    <VStack>
-      <Button>Say hello</Button>
+    <VStack h='100vh' w='100vw' align='center' justify='center'>
       <debug.Provider store={browserStore('state')}>
         <modeCtl.Provider>
           <Display />
           <Switch />
           <modeCtl.Dark>
-        <p>Dark Mode!</p>
-        </modeCtl.Dark>
-        <modeCtl.Light>
-        <p>Light Mode!</p>
-        </modeCtl.Light>
+            <Dark />
+          </modeCtl.Dark>
+          <modeCtl.Light>
+            <p>Light Mode!</p>
+          </modeCtl.Light>
         </modeCtl.Provider>
       </debug.Provider>
     </VStack>
