@@ -1,4 +1,4 @@
-import { createContext, PropsWithChildren, useContext } from 'react'
+import React, { createContext, PropsWithChildren, useContext } from 'react'
 
 export type Use<Tag extends string> = `use${Capitalize<Tag>}`
 

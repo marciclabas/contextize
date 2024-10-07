@@ -30,9 +30,6 @@ export function tagged<
 ): Tagged<Ctx, Tag, Props> {
 
   const ctx = createContext<Ctx>({} as any)
-  const contexts = {}
-  const hooks = {}
-  const guards = {}
 
   function Provider({ children, ...props }: any) {
     const ctxVal = useController(props)
@@ -41,12 +38,8 @@ export function tagged<
 
   const use = () => useContext(ctx) // eslint-disable-line
   const guard = t => ({ children }) => {
-    const { tag, ...value } = use()
-    if (t !== tag)
-      return null
-
-    const Provider = contexts[t].Provider
-    return <Provider {...value} children={children} />
+    const { tag } = use()
+    return tag == t ? children : null
   }
 
   function Switch({ tags, children }) {
@@ -68,21 +61,12 @@ export function tagged<
 
       if (propString.startsWith('use')) {
         const tag = propString.slice(3).toLowerCase()
-        if (!contexts[tag])
-          contexts[tag] = createContext({})
-        if (!hooks[tag])
-          hooks[tag] = () => useContext(contexts[tag]) // eslint-disable-line
-        return hooks[tag]
+        return () => use()[tag]
       }
 
       const capitalizedProp = propString.charAt(0).toUpperCase() + propString.slice(1)
       const tag = capitalizedProp.toLowerCase()
-      if (!guards[tag]) {
-        if (!contexts[tag])
-          contexts[tag] = createContext({})
-        guards[tag] = guard(tag)
-      }
-      return guards[tag]
+      return guard(tag)
     }
 }
 
